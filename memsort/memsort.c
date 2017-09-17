@@ -23,7 +23,8 @@
  */
 
 #include "linux/types.h"
-#include "linux/printk.h"
+#include "linux/kernel.h"
+#include "linux/syscalls.h"
 #include "linux/stddef.h"
 #include "linux/errno.h"
 #include "linux/uaccess.h"
@@ -44,49 +45,49 @@
  * @return A kernel error code from errno.h or errno-base.h
  */
 SYSCALL_DEFINE3(memsort, int32_t __user *, buf, int32_t, size, int32_t __user *, sbuf) {
-    printk(KERN_INFO, "memsort system call starting.\n");
+    printk(KERN_INFO "memsort: system call starting.\n");
 
     long ret = 0;
 
     /* Validate arguments */
     if (buf == NULL) {
-        printk(KERN_WARNING, "memsort failed with a null pointer argument.\n");
+        printk(KERN_WARNING "memsort: failed with a null pointer argument.\n");
         return -EFAULT;
     }
 
     if (sbuf == NULL) {
-        printk(KERN_WARNING, "memsort failed with a null pointer argument.\n");
+        printk(KERN_WARNING "memsort: failed with a null pointer argument.\n");
         return -EFAULT;
     }
 
     if (size <= 0) {
-        printk(KERN_WARNING, "memsort failed with a negative size argument.\n");
+        printk(KERN_WARNING "memsort: failed with a negative size argument.\n");
         return -EINVAL;
     }
 
     if (access_ok(VERIFY_WRITE, buf, size)) {
-        printk(KERN_WARNING, "memsort buffer is not in userspace.\n");
+        printk(KERN_WARNING "memsort: buffer is not in userspace.\n");
         return -EFAULT;
     }
 
     if (access_ok(VERIFY_WRITE, sbuf, size)) {
-        printk(KERN_WARNING, "memsort buffer is not in userspace.\n");
+        printk(KERN_WARNING "memsort: buffer is not in userspace.\n");
         return - EFAULT;
     }
 
     /* Print size of buffer */
-    printk(KERN_INFO, "memsort size of buffer is %d bytes.\n", size*sizeof(int32_t));
+    printk(KERN_INFO "memsort: size of buffer is %d bytes.\n", size*sizeof(int32_t));
 
     /* Allocate kernel memory for sorting */
     int32_t *sort = kmalloc(size, GFP_KERNEL);
     if (sort == NULL) {
-        printk(KERN_WARNING, "memsort failed to allocate memory.\n");
+        printk(KERN_WARNING "memsort: failed to allocate memory.\n");
     }    
 
 
     /* Copy source buffer */
     if (copy_from_user(buf, sort, size*sizeof(int32_t))) {
-        printk(KERN_WARNING, "memsort failed to copy from user space.\n");
+        printk(KERN_WARNING "memsort: failed to copy from user space.\n");
         kfree(sort);
         return -EFAULT;
     }
@@ -104,15 +105,15 @@ SYSCALL_DEFINE3(memsort, int32_t __user *, buf, int32_t, size, int32_t __user *,
     }
 
     /* Display result */
-    printk(KERN_INFO, "memsort successfully sorted numbers: ");
+    printk(KERN_INFO "memsort: successfully sorted numbers: ");
     for (int i = 0; i < size; i++) {
-        printk(KERN_CONT, "%d ", sort[i]);
+        printk(KERN_CONT "%d ", sort[i]);
     }
     printk(KERN_CONT, ".\n");
 
     /* Copy back to user */
     if (copy_to_user(sbuf, sort, size*sizeof(int32_t))) {
-        printk(KERN_WARNING, "memsort failed to copy to user space.\n");
+        printk(KERN_WARNING "memsort: failed to copy to user space.\n");
         kfree(sort);
         return -EFAULT;
     } 
@@ -121,38 +122,8 @@ SYSCALL_DEFINE3(memsort, int32_t __user *, buf, int32_t, size, int32_t __user *,
     kfree(sort);
 
     /* Goodbye */
-    printk(KERN_INFO, "memsort successfully completed.\n");
+    printk(KERN_INFO "memsort: successfully completed.\n");
 
     return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
