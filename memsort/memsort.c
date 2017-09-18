@@ -25,9 +25,6 @@
 #include "linux/types.h"
 #include "linux/kernel.h"
 #include "linux/syscalls.h"
-#include "linux/stddef.h"
-#include "linux/errno.h"
-#include "linux/uaccess.h"
 #include "linux/slab.h"
 
 /**
@@ -65,12 +62,12 @@ SYSCALL_DEFINE3(memsort, int32_t __user *, buf, int32_t, size, int32_t __user *,
         return -EINVAL;
     }
 
-    if (access_ok(VERIFY_WRITE, buf, size)) {
+    if (!access_ok(VERIFY_WRITE, buf, size)) {
         printk(KERN_WARNING "memsort: buffer is not in userspace.\n");
         return -EFAULT;
     }
 
-    if (access_ok(VERIFY_WRITE, sbuf, size)) {
+    if (!access_ok(VERIFY_WRITE, sbuf, size)) {
         printk(KERN_WARNING "memsort: buffer is not in userspace.\n");
         return - EFAULT;
     }
@@ -79,14 +76,14 @@ SYSCALL_DEFINE3(memsort, int32_t __user *, buf, int32_t, size, int32_t __user *,
     printk(KERN_INFO "memsort: size of buffer is %d bytes.\n", size*sizeof(int32_t));
 
     /* Allocate kernel memory for sorting */
-    int32_t *sort = kmalloc(size, GFP_KERNEL);
+    int32_t *sort = kmalloc(size*sizeof(int32_t), GFP_KERNEL);
     if (sort == NULL) {
         printk(KERN_WARNING "memsort: failed to allocate memory.\n");
+        return -ENOMEM;
     }    
 
-
     /* Copy source buffer */
-    if (copy_from_user(buf, sort, size*sizeof(int32_t))) {
+    if (copy_from_user(sort, buf, size*sizeof(int32_t))) {
         printk(KERN_WARNING "memsort: failed to copy from user space.\n");
         kfree(sort);
         return -EFAULT;
@@ -94,8 +91,10 @@ SYSCALL_DEFINE3(memsort, int32_t __user *, buf, int32_t, size, int32_t __user *,
 
     /* Sort memory */
     int32_t temp = 0;
-    for (int i = 0; i < size; i++) {
-        for (int j = i+1; j < size; j++) {
+    int i = 0;
+    int j = 0;
+    for (i = 0; i < size; i++) {
+        for (j = i+1; j < size; j++) {
             if (sort[i] < sort[j]) {
                 temp = sort[i];
                 sort[i] = sort[j];
@@ -106,10 +105,10 @@ SYSCALL_DEFINE3(memsort, int32_t __user *, buf, int32_t, size, int32_t __user *,
 
     /* Display result */
     printk(KERN_INFO "memsort: successfully sorted numbers: ");
-    for (int i = 0; i < size; i++) {
+    for (i = 0; i < size; i++) {
         printk(KERN_CONT "%d ", sort[i]);
     }
-    printk(KERN_CONT, ".\n");
+    printk(KERN_CONT ".\n");
 
     /* Copy back to user */
     if (copy_to_user(sbuf, sort, size*sizeof(int32_t))) {
@@ -126,4 +125,34 @@ SYSCALL_DEFINE3(memsort, int32_t __user *, buf, int32_t, size, int32_t __user *,
 
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
